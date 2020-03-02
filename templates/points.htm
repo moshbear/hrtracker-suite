@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+	<title>Points calculator</title>
+</head>
+<body>
+	<h1 style="text-align: center">Points calculator</h1>
+	<div class="content">
+	{% if hpv %}
+		<table class="bordered">
+		{% for start,end,nhp,cals in hpv %}
+			<tr>
+				<td class="bordered">
+					From: {{ start }} to {{ end }}
+				</td>
+				<td class="bordered">
+					{{ nhp }} Heart Points
+				</td>
+				<td class="bordered">
+					{{ cals }} calories
+			</tr>
+		{% endfor %}
+		</table>
+		{% if miscv|length >= 1 %}
+			<table>
+			{% for label,value in miscv %}
+				<tr>
+					<td>{{ label }} cutoff:</td>
+					<td>{{ value }}</td>
+				</tr>
+			{% endfor %}
+			</table>
+		{% endif %}
+	{% endif %}
+	<div class="form">
+		<form action="/points" enctype="multipart/form-data" method="POST">
+			<table class="bordered">
+				<tr class="bordered">
+					<td colspan="2">
+						<label for="hr_max">Max HR (220 - age if unsure)</label>
+					</td>
+					<td>
+						<input type="number" id="hr_max" name="hr_max" min="{{ ranged['hr'][0] }}" max="{{ ranged['hr'][1] }}" value="200">
+					</td>
+				</tr>
+				{% for cutoff in cutoff_fields %}
+					<tr class="bordered">
+						<td colspan="2">
+							<label for="{{ cutoff.field }}">{{ cutoff.descr }}</label>
+						</td>
+						<td>
+							<input type="number" id="{{ cutoff.field }}" name="{{ cutoff.field }}" min="{{ ranged['cutoff'][0] }}" max="{{ ranged['cutoff'][1] }}" value="{{ cutoff.value }}">
+						</td>
+					</tr>
+				{% endfor %}
+				<tr class="bordered">
+					<td>
+						Filter out minimum heart rate
+					</td>
+					<td>
+						<input type="checkbox" id="hr_min_enable" name="hr_min_enable">
+					</td>
+					<td>
+						<input type="number" id="hr_min" name="hr_min" min="{{ ranged['hr'][0] }}" max="{{ ranged['hr'][1] }}" value="0">
+					</td>
+				</tr>
+			</table>
+			<label for="expr">Evaluate expression (number is file number, comma is splice, and dot is end-of-splice):</label>
+			<input type=text" id="expr" name="expr" maxlength="100">
+			<br/>
+			<label for="files">File(s) to upload</label>
+			<input type="file" id="files" name="files[]" multiple="">
+			<input type="submit" value"Evaluate">
+		</form>
+	</div> <!-- form !-->
+	<br/>
+	<a href="/">Back</a>
+	</div> <!-- content !-->
+</body>
+</html>

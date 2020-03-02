@@ -1,0 +1,32 @@
+body, html {
+    margin: 0;
+    font-family: sans-serif;
+}
+
+.content {
+    margin: 0 auto;
+    width: 400px;
+}
+
+table {
+   border-collapse: collapse;
+}
+
+table.bordered, td.bordered {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #aaa;
+}
+
+tr.bordered {
+    border: 1px solid #aaa;
+}
+
+td {
+    text-align: center;
+    padding: 5px;
+}
+
+#content {
+    width: 70%;
+}

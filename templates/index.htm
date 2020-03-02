@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+	<title>HRTracker suite</title>
+</head>
+<body>
+	<h1 style="text-align: center">HRTracker Suite</h1>
+	<div class="content">
+		{% if pages|length > 0 %}
+			<ul style="list-style-type:none">
+				{% for link,name in pages %}
+				<li><a href="{{ link }}">{{ name }}</a>	</li>
+				{% endfor %}
+			</ul>
+		{% endif %}
+	</div>
+</body>
+</html>
+
