@@ -1,7 +1,7 @@
 # hrtracker-suite
 Heart rate tracker data handler
 
-This suite consists of a library portion (`lib/`) and a Flask-based web app.  
+This suite consists of a library portion (`lib/`) and a Flask-based web app (`app.py`, `templates/`, `static/`).  
 The library part has an optional requirement for `fitdecode` but is usable otherwise. 
 The web app (`app.py`) requires the packages listed in `requirements.txt`.
 
