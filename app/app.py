@@ -147,15 +147,11 @@ class PageRegistry:
 
 # browser sends empty filename if no file was selected
 # check for that being false before handling the files
-# with the exception class, the file-dependent parts can be wrapped in a
-# `try -- except MissingFileException: pass` block
-class MissingFileException(Exception):
-    pass
-def require_files(files):
+def require_files(files, name):
     if len(files) and files[0].filename:
         return None
     else:
-        raise MissingFileException()
+        abort(400, f'No files were supplied in file multi-arg "{name}"')
 
 app = Flask(__name__)
 # 16 MB upload limit
@@ -175,66 +171,63 @@ def serve_points():
         'cutoff_fields': cutoff_fields,
         'ranged': ranged_vals
     }
-    try:
-        if request.method == 'POST':
-            hr_max = ranged(request.form, 'hr_max', 'hr')
-            kw_pts = { 'hr_max' : hr_max }
-            for v in [ '_mod', '_hi', '_xhi' ]:
-                kw_pts['pct' + v] = \
-                    float(ranged(request.form, 'v' + v, 'cutoff')) / 100.0
-            if request.form.get('hr_min_enable'):
-                kw_pts['hr_min'] = ranged(request.form, 'hr_min', 'hr')
-            # Process files
-            files = request.files.getlist("files[]")
-            require_files(files)
+    if request.method == 'POST':
+        hr_max = ranged(request.form, 'hr_max', 'hr')
+        kw_pts = { 'hr_max' : hr_max }
+        for v in [ '_mod', '_hi', '_xhi' ]:
+            kw_pts['pct' + v] = \
+                float(ranged(request.form, 'v' + v, 'cutoff')) / 100.0
+        if request.form.get('hr_min_enable'):
+            kw_pts['hr_min'] = ranged(request.form, 'hr_min', 'hr')
+        # Process files
+        files = request.files.getlist("files[]")
+        require_files(files, 'files')
 
-            points_v = points(((f.stream, f.filename) for f in files), **kw_pts)
-            hpv_vals = sorted([_ for _ in points_v])
+        points_v = points(((f.stream, f.filename) for f in files), **kw_pts)
+        hpv_vals = sorted([_ for _ in points_v])
 
-            cutoffs = HeartPointConfig.do_cutoffs(**kw_pts)
+        cutoffs = HeartPointConfig.do_cutoffs(**kw_pts)
 
-            template_kw['miscv'] = [
-                [ 'Moderate', cutoffs[0] ],
-                [ 'Vigorous', cutoffs[1] ],
-                [ 'Extra-vigorous', cutoffs[2] ]
-            ]
+        template_kw['miscv'] = [
+            [ 'Moderate', cutoffs[0] ],
+            [ 'Vigorous', cutoffs[1] ],
+            [ 'Extra-vigorous', cutoffs[2] ]
+        ]
 
-            # Evaluate a dots and commas expression to concatenate sources as
-            # applicable for aggregate hp, cals, time range.
-            if request.form.get('expr'):
-                e = request.form['expr'][:EXPR_MAX_LEN]
-                vals = set()
-                n_hpv = len(hpv_vals)
-                for e_dot in (d for d in re.split(r'\.+', e) if d):
-                    try:
-                        e_commas_u = \
-                            (int(c) for c in re.split(',+', e_dot) if c)
-                    except ValueError:
-                        continue
-                    # must use list instead of generator here because we need
-                    # the last value (and also because iterated over twice
-                    # (for now)
-                    e_commas = [c for c in e_commas_u
-                                if c > 0 and c <= n_hpv
-                                and c not in vals and (vals.add(c) or True)]
-                    first = e_commas[0]
-                    last = e_commas[-1] if len(e_commas) > 1 else None
-                    t0 = hpv_vals[first - 1].start
-                    if last:
-                        t1 = hpv_vals[last - 1].end
-                    else:
-                        t1 = hpv_vals[first - 1].end
-                    nhp = sum(map(lambda e: hpv_vals[e - 1].points, e_commas))
-                    ncals = \
-                        sum(map(lambda e: int(hpv_vals[e - 1].cals), e_commas))
-                    hpv_vals.append(HeartPointConfig.HeartPointObject(
-                                    t0, t1, nhp, ncals))
-            template_kw['hpv'] = (
-                    (stringify_start_time(hp.start), stringify_end_time(hp.end),
-                     hp.points, hp.cals) \
-             for hp in hpv_vals)
-    except MissingFileException:
-        abort(400, 'No files were supplied')
+        # Evaluate a dots and commas expression to concatenate sources as
+        # applicable for aggregate hp, cals, time range.
+        if request.form.get('expr'):
+            e = request.form['expr'][:EXPR_MAX_LEN]
+            vals = set()
+            n_hpv = len(hpv_vals)
+            for e_dot in (d for d in re.split(r'\.+', e) if d):
+                try:
+                    e_commas_u = \
+                        (int(c) for c in re.split(',+', e_dot) if c)
+                except ValueError:
+                    continue
+                # must use list instead of generator here because we need
+                # the last value (and also because iterated over twice
+                # (for now)
+                e_commas = [c for c in e_commas_u
+                            if c > 0 and c <= n_hpv
+                            and c not in vals and (vals.add(c) or True)]
+                first = e_commas[0]
+                last = e_commas[-1] if len(e_commas) > 1 else None
+                t0 = hpv_vals[first - 1].start
+                if last:
+                    t1 = hpv_vals[last - 1].end
+                else:
+                    t1 = hpv_vals[first - 1].end
+                nhp = sum(map(lambda e: hpv_vals[e - 1].points, e_commas))
+                ncals = \
+                    sum(map(lambda e: int(hpv_vals[e - 1].cals), e_commas))
+                hpv_vals.append(HeartPointConfig.HeartPointObject(
+                                t0, t1, nhp, ncals))
+        template_kw['hpv'] = (
+                (stringify_start_time(hp.start), stringify_end_time(hp.end),
+                 hp.points, hp.cals) \
+         for hp in hpv_vals)
     return render_template('points.htm', **template_kw)
 
 @pages.register_route('/zipsplit', 'Save hourly splits to zip', \
@@ -243,22 +236,19 @@ def serve_zipsplit():
     template_kw = {
         'ranged': ranged_vals
     }
-    try:
-        if request.method == 'POST':
-            kw_zipper = {}
-            if request.form.get('hr_min_enable'):
-                hr_min = ranged(request.form, 'hr_min', 'hr')
-                kw_zipper['hr_min'] = hr_min
-            # Process files
-            files = request.files.getlist("files[]")
-            require_files(files)
-            zip_name, zip_data = \
-                zip_all_splits((f.stream for f in files), **kw_zipper)
-            return send_file(zip_data, mimetype='application/zip',
-                             as_attachment = True,
-                             attachment_filename = zip_name)
-    except MissingFileException:
-        abort(400, 'No files were supplied')
+    if request.method == 'POST':
+        kw_zipper = {}
+        if request.form.get('hr_min_enable'):
+            hr_min = ranged(request.form, 'hr_min', 'hr')
+            kw_zipper['hr_min'] = hr_min
+        # Process files
+        files = request.files.getlist("files[]")
+        require_files(files, 'files')
+        zip_name, zip_data = \
+            zip_all_splits((f.stream for f in files), **kw_zipper)
+        return send_file(zip_data, mimetype='application/zip',
+                         as_attachment = True,
+                         attachment_filename = zip_name)
     return render_template('zipsplit.htm', **template_kw)
 
 
