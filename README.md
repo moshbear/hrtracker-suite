@@ -1,13 +1,14 @@
 # hrtracker-suite
 Heart rate tracker data handler
 
-This suite consists of a library portion (`lib/`) and a Flask-based web app (`app.py`, `templates/`, `static/`).  
+This suite consists of a library portion (`lib/`) and a Flask-based web app (`app/`).  
 The library part has an optional requirement for `fitdecode` but is usable otherwise. 
-The web app (`app.py`) requires the packages listed in `requirements.txt`.
+The web app (`app/app.py`) requires the packages listed in `app/requirements.txt`.
 
 The motivation behind this is dealing with Google Fit and heart point calculation but also
 heart rate upload.
 
+# Design
 The library can be broken up into four parts, roughly following a map-filter-reduce pipeline with types:
 * `consumers` -- these consume the pipeline and yield heart points and pnn-sgt files (`reducers`)
 * `producers` -- these decode the files and produce a pipeline (`mappers`)

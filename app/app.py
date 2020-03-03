@@ -10,13 +10,18 @@
 from datetime import datetime
 import hashlib
 from io import BytesIO
+import os
 import re
+import sys
 from time import gmtime
 from zipfile import ZipFile, ZipInfo, ZIP_DEFLATED
 # pypi
 from flask import Flask, abort, render_template, request, send_file, url_for
 import fitdecode
 # local
+# (this is a hack until app is split into a package and `import ..lib` can be
+# done)
+sys.path.insert(1, os.path.join(sys.path[0], '..'))
 from lib import decode_stream, CannotDecodeFileException, \
                 HRTrackerFilter, HRTrackerIdentityTransform, \
                 HRTrackerSplitter, PnnSgtLogfile, HeartPointConfig
