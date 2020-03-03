@@ -8,6 +8,7 @@
 
 # stdlib
 from datetime import datetime
+import functools
 import hashlib
 from io import BytesIO
 import os
@@ -116,7 +117,33 @@ def ranged(form, field, category):
     except (TypeError, ValueError):
         abort(400, f'bad value for input {field}')
 
-pages = []
+# Use a PageRegistry to keep track of paths to descriptions and routes
+class PageRegistry:
+    def __init__(self, app):
+        self._pages = []
+        self._flask = app
+        @self._flask.route('/')
+        def serve_index():
+            return render_template('index.htm', pages = self._pages)
+   
+    # for decorators with params, we need three levels of function nesting:
+    # the first captures decorator args;
+    # the second captures the function; and
+    # the third invokes the function.
+    # it is the third that we need to apply flask and functools decorators on
+    def register_route(self, path, descr, *route_args, **route_kwargs):
+        """
+        Register a route with a specified path, description,
+        and route (kw)args.
+        """
+        self._pages.append((path, descr))
+        def wrapper(view):
+            @self._flask.route(path, *route_args, **route_kwargs)
+            @functools.wraps(view)
+            def wrapped_func(*args, **kwargs):
+                return view(*args, **kwargs)
+        return wrapper
+
 
 # browser sends empty filename if no file was selected
 # check for that being false before handling the files
@@ -133,9 +160,10 @@ def require_files(files):
 app = Flask(__name__)
 # 16 MB upload limit
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1 << 20
+pages = PageRegistry(app)
 
-pages.append(('/points', 'Heart points calculator'))
-@app.route('/points', methods=['POST', 'GET'])
+@pages.register_route('/points', 'Heart points calculator', \
+                      methods = ['GET', 'POST'])
 def serve_points():
     cutoff_fields = [
         { 'field': 'v_mod', 'value': '60', 'descr': 'Moderate %HRmax cutoff' },
@@ -209,8 +237,8 @@ def serve_points():
         abort(400, 'No files were supplied')
     return render_template('points.htm', **template_kw)
 
-pages.append(('/zipsplit', 'Save hourly splits to zip'))
-@app.route('/zipsplit', methods=['POST', 'GET'])
+@pages.register_route('/zipsplit', 'Save hourly splits to zip', \
+                      methods = ['GET', 'POST'])
 def serve_zipsplit():
     template_kw = {
         'ranged': ranged_vals
@@ -233,7 +261,4 @@ def serve_zipsplit():
         abort(400, 'No files were supplied')
     return render_template('zipsplit.htm', **template_kw)
 
-@app.route('/')
-def serve_index():
-    return render_template('index.htm', pages = pages)
 
