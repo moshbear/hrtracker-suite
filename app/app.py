@@ -223,9 +223,14 @@ def serve_points():
                     t1 = hpv_vals[last - 1].end
                 else:
                     t1 = hpv_vals[first - 1].end
-                nhp = sum(map(lambda e: hpv_vals[e - 1].points, e_commas))
-                ncals = \
-                    sum(map(lambda e: int(hpv_vals[e - 1].cals), e_commas))
+                # gen-comp the expr 1-indexes to an iterable of
+                # tuples of (points, cals) and feed it to a reducer that does
+                # zip for element-wise summing of all the points and cals
+                nhp, ncals = functools.reduce(\
+                    lambda a,b: [sum(z) for z in zip(a,b)],
+                    ((hpv_vals[e - 1].points, hpv_vals[e - 1].cals) \
+                     for e in e_commas),
+                    (0, 0))
                 hpv_vals.append(HeartPointConfig.HeartPointObject(
                                 t0, t1, nhp, ncals))
         template_kw['hpv'] = (

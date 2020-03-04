@@ -71,10 +71,8 @@ class HeartPointConfig:
         """
         Generate cutoff vectors given kw args hr_max, pct_mod, pct_hi, pct_xhi
         """
-        return list(map(
-                      lambda pct : int(kw['hr_max']) * float(kw['pct_' + pct]),\
-                      ['mod', 'hi', 'xhi']
-                ))
+        return [int(kw['hr_max']) * float(kw['pct_' + pct]) \
+                for pct in ('mod', 'hi', 'xhi')]
     
 
     def heart_points(self, workout):
