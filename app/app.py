@@ -190,7 +190,7 @@ def serve_points():
         points_v = points(((f.stream, f.filename) for f in files), **kw_pts)
         hpv_vals = sorted([_ for _ in points_v])
 
-        cutoffs = HeartPointConfig.do_cutoffs(**kw_pts)
+        cutoffs = HeartPointConfig.get_cutoffs(**kw_pts)
 
         template_kw['miscv'] = [
             [ 'Moderate', cutoffs[0] ],

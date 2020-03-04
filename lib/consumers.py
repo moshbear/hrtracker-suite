@@ -58,7 +58,7 @@ class HeartPointConfig:
             _check_pct(p[0], p[1])
 
 
-        self._cutoffs = HeartPointConfig.do_cutoffs(
+        self._cutoffs = HeartPointConfig.get_cutoffs(
                **{ 'hr_max': hr_max,
                  'pct_mod': pct_mod, 'pct_hi': pct_hi, 'pct_xhi': pct_xhi })
         self._last_off = len(self._cutoffs) - 1
@@ -67,7 +67,7 @@ class HeartPointConfig:
                                   ['start', 'end', 'points', 'cals'])
     
     @staticmethod
-    def do_cutoffs(**kw):
+    def get_cutoffs(**kw):
         """
         Generate cutoff vectors given kw args hr_max, pct_mod, pct_hi, pct_xhi
         """
