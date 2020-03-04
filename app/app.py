@@ -7,6 +7,7 @@
 # See the LICENSE file at the root of this project.
 
 # stdlib
+from collections import OrderedDict
 from datetime import datetime
 import functools
 import hashlib
@@ -120,11 +121,11 @@ def ranged(form, field, category):
 # Use a PageRegistry to keep track of paths to descriptions and routes
 class PageRegistry:
     def __init__(self, app):
-        self._pages = []
+        self._pages = OrderedDict()
         self._flask = app
         @self._flask.route('/')
         def serve_index():
-            return render_template('index.htm', pages = self._pages)
+            return render_template('index.htm', pages = self._pages.items())
    
     # for decorators with params, we need three levels of function nesting:
     # the first captures decorator args;
@@ -136,7 +137,9 @@ class PageRegistry:
         Register a route with a specified path, description,
         and route (kw)args.
         """
-        self._pages.append((path, descr))
+        # Only care about GET endpoints
+        if 'GET' in route_kwargs.get('method', ['GET']):
+            self._pages.setdefault(path, []).append(descr)
         def wrapper(view):
             @self._flask.route(path, *route_args, **route_kwargs)
             @functools.wraps(view)
@@ -157,6 +160,7 @@ app = Flask(__name__)
 # 16 MB upload limit
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1 << 20
 pages = PageRegistry(app)
+EXPR_MAX_LEN = 100
 
 @pages.register_route('/points', 'Heart points calculator', \
                       methods = ['GET', 'POST'])
@@ -250,5 +254,4 @@ def serve_zipsplit():
                          as_attachment = True,
                          attachment_filename = zip_name)
     return render_template('zipsplit.htm', **template_kw)
-
 
