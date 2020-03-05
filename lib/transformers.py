@@ -6,16 +6,18 @@
 # This code is licensed under the 3-clause BSD License.
 # See the LICENSE file at the root of this project.
 
+from itertools import chain
+
 from .types import HRTrackerIterable, HRTrackerData
 
 __all__ = ['HRTrackerFilter', 'HRTrackerIdentityTransform',
-           'HRTrackerSplitter']
+           'HRTrackerMerger', 'HRTrackerSplitter']
 
 """
 This module contains transformers. A transformer is a proxy for a
 HRTrackerIterable that does some kind of filter operation.
 
-Some transformations may be one-to-many.
+Some transformations may be one-to-many or many-to-one.
 """
 
 class HRTrackerFilter(HRTrackerIterable):
@@ -62,7 +64,6 @@ class HRTrackerFilter(HRTrackerIterable):
         else:
             super.__setattr__(self, name, value)
 
-
 class HRTrackerIdentityTransform(HRTrackerIterable):
     """
     An identity container for heart rate tracker data.
@@ -93,6 +94,15 @@ class HRTrackerIdentityTransform(HRTrackerIterable):
         else:
             raise AttributeError()
 
+def HRTrackerMerger(*trackers, **kwargs):
+    """
+    A merging container for heart rate tracker data.
+    This is a many-to-one transformation.
+    """
+    return \
+        HRTrackerIdentityTransform(HRTrackerData(
+            chain(*trackers)
+        ))
 
 class HRTrackerSplitter(HRTrackerIterable):
     """
